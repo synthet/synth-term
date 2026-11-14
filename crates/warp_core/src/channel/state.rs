@@ -464,6 +464,24 @@ impl ChannelState {
         option_env!("GIT_RELEASE_TAG")
     }
 
+    /// Test-only: switches this process to a non-OSS channel whose server and Oz roots are
+    /// loopback addresses, so [`Self::cloud_agents_enabled`] is `true`. Synth Warp gates
+    /// Warp-hosted cloud agents off for [`Channel::Oss`] whatever the configured roots, so
+    /// upstream tests of those paths need this to exercise the code they were written for.
+    /// The shipped channel state is restored when the guard drops. Mutates process-global
+    /// state: rely on nextest's process-per-test isolation, or run such tests serially.
+    #[cfg(feature = "test-util")]
+    pub fn enable_cloud_agents_for_test() -> CloudAgentsEnabledForTest {
+        const LOOPBACK_ROOT: &str = "http://127.0.0.1:9";
+        let mut state = Self::init();
+        state.channel = Channel::Local;
+        state.config.server_config.server_root_url = LOOPBACK_ROOT.into();
+        state.config.oz_config.oz_root_url = LOOPBACK_ROOT.into();
+        Self::set(state);
+        assert!(Self::cloud_agents_enabled());
+        CloudAgentsEnabledForTest(())
+    }
+
     pub fn sentry_url() -> Cow<'static, str> {
         CHANNEL_STATE
             .lock()
@@ -619,6 +637,19 @@ const OSS_CONTROL_PLANE_FEATURES: &[FeatureFlag] = &[
     FeatureFlag::CloudConversations,
     FeatureFlag::HOARemoteControl,
 ];
+
+/// Restores the shipped channel state on drop. See
+/// [`ChannelState::enable_cloud_agents_for_test`].
+#[cfg(feature = "test-util")]
+#[must_use = "cloud agents are disabled again as soon as the guard drops"]
+pub struct CloudAgentsEnabledForTest(());
+
+#[cfg(feature = "test-util")]
+impl Drop for CloudAgentsEnabledForTest {
+    fn drop(&mut self) {
+        ChannelState::set(ChannelState::init());
+    }
+}
 
 pub fn filter_unsupported_features_for(
     flags: &mut HashSet<FeatureFlag>,

@@ -374,6 +374,8 @@ fn assert_failed_launch_cleaned_up(
 
 #[test]
 fn remote_dispatch_uses_captured_scope_and_auth_secret() {
+    // Synth Warp gates cloud agents off in OSS builds; this exercises the upstream path.
+    let _cloud_agents = warp_core::channel::ChannelState::enable_cloud_agents_for_test();
     App::test((), |mut app| async move {
         let fixture = orchestration_fixture(&mut app);
         let parent_session_id = add_dispatching_session(&mut app, &fixture, true);
