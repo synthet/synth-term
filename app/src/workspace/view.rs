@@ -23896,7 +23896,9 @@ impl Workspace {
                 entry_focus: GlobalSearchEntryFocus::Results,
             });
         }
-        if *WarpDriveSettings::as_ref(ctx).enable_warp_drive {
+        // Synth Warp is local-first: Warp Drive is hosted cloud storage, so this
+        // build has no Drive tab at all rather than a permanently locked one.
+        if *WarpDriveSettings::as_ref(ctx).enable_warp_drive && ChannelState::warp_cloud_enabled() {
             views.push(ToolPanelView::WarpDrive);
         }
         views

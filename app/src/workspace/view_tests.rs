@@ -579,6 +579,77 @@ fn test_theme_chooser_does_not_suppress_tab_bar_traffic_light_padding() {
     });
 }
 
+/// Synth Warp is local-first: the tools panel only offers Warp Drive when a
+/// self-hosted backend is configured. Restores the shipped channel state on drop.
+struct SelfHostedServerRootGuard;
+
+impl SelfHostedServerRootGuard {
+    fn new() -> Self {
+        ChannelState::override_server_root_url("http://127.0.0.1:9")
+            .expect("valid self-hosted server root");
+        assert!(ChannelState::warp_cloud_enabled());
+        Self
+    }
+}
+
+impl Drop for SelfHostedServerRootGuard {
+    fn drop(&mut self) {
+        ChannelState::set(ChannelState::init());
+    }
+}
+
+/// Synth Warp is local-first: with the shipped (disabled) server root, Warp
+/// Drive is never a tools-panel tab, even when its preference is on, while the
+/// local tabs stay. Guards against a locked Drive entry reappearing.
+#[test]
+fn test_tools_panel_hides_warp_drive_without_warp_cloud() {
+    let _conversation_list_guard =
+        FeatureFlag::AgentViewConversationListView.override_enabled(true);
+
+    App::test((), |mut app| async move {
+        initialize_app(&mut app);
+        assert!(!ChannelState::warp_cloud_enabled());
+        app.update(|ctx| {
+            WarpDriveSettings::handle(ctx).update(ctx, |settings, ctx| {
+                settings
+                    .enable_warp_drive
+                    .set_value(true, ctx)
+                    .expect("enable Warp Drive preference");
+            });
+            AISettings::handle(ctx).update(ctx, |settings, ctx| {
+                settings
+                    .show_conversation_history
+                    .set_value(true, ctx)
+                    .expect("show conversation history");
+            });
+        });
+
+        let workspace = mock_workspace(&mut app);
+        workspace.read(&app, |workspace, _| {
+            assert!(
+                !workspace
+                    .left_panel_views
+                    .contains(&ToolPanelView::WarpDrive),
+                "local-only builds must not show a Warp Drive tab"
+            );
+            assert!(
+                workspace
+                    .left_panel_views
+                    .contains(&ToolPanelView::ConversationListView),
+                "local agent conversations stay in the tools panel"
+            );
+            if cfg!(feature = "local_fs") {
+                assert!(
+                    workspace
+                        .left_panel_views
+                        .contains(&ToolPanelView::ProjectExplorer),
+                    "project explorer stays in the tools panel"
+                );
+            }
+        });
+    });
+}
+
 /// Regression for account-first onboarding users who select Warp Drive and
 /// conversation history, skip signup, and create an account later. The stored
 /// preferences should remain true while unavailable, then take effect
@@ -586,6 +657,7 @@ fn test_theme_chooser_does_not_suppress_tab_bar_traffic_light_padding() {
 /// toggle.
 #[test]
 fn test_tools_panel_preferences_activate_after_signup_and_ai_enablement() {
+    let _self_hosted_guard = SelfHostedServerRootGuard::new();
     let _skip_anon_guard = FeatureFlag::SkipFirebaseAnonymousUser.override_enabled(true);
     let _conversation_list_guard =
         FeatureFlag::AgentViewConversationListView.override_enabled(true);
@@ -5342,6 +5414,7 @@ fn test_pin_tab_on_grouped_tab_extracts_then_pins() {
 /// the tools panel with no way back).
 #[test]
 fn test_tools_panel_warp_drive_toggle_updates_available_views() {
+    let _self_hosted_guard = SelfHostedServerRootGuard::new();
     // Force the non-anonymous path so `is_warp_drive_enabled` follows the
     // `enable_warp_drive` setting rather than the auth state.
     let _skip_anon_guard = FeatureFlag::SkipFirebaseAnonymousUser.override_enabled(false);
