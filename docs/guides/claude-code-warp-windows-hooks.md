@@ -21,8 +21,11 @@ The official `warp@claude-code-warp` Claude Code plugin registers hooks as bare 
 From the repo root, run:
 
 ```powershell
-.\scripts\install_claude_warp_hooks_windows.ps1
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\install_claude_warp_hooks_windows.ps1
 ```
+
+Running the bare `.ps1` path fails in Windows PowerShell 5.1 when no execution policy is set,
+because its default is `Restricted`. `-ExecutionPolicy Bypass` applies only to that one process.
 
 This script:
 

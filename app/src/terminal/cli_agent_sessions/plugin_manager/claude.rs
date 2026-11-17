@@ -296,6 +296,12 @@ static UPDATE_INSTRUCTIONS: LazyLock<PluginInstructions> = LazyLock::new(|| Plug
     post_install_notes: &["Restart Claude Code to activate the update."],
 });
 
+/// Runs the installer under `pwsh` with a process-scoped `Bypass`: a bare `.ps1` path fails in
+/// Windows PowerShell 5.1, whose default execution policy is `Restricted`.
+#[cfg(windows)]
+const WINDOWS_INSTALLER_COMMAND: &str =
+    "pwsh -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\install_claude_warp_hooks_windows.ps1";
+
 #[cfg(windows)]
 static WINDOWS_INSTALL_INSTRUCTIONS: LazyLock<PluginInstructions> = LazyLock::new(|| {
     PluginInstructions {
@@ -303,7 +309,7 @@ static WINDOWS_INSTALL_INSTRUCTIONS: LazyLock<PluginInstructions> = LazyLock::ne
         subtitle: "Do not install warp@claude-code-warp on Windows — its bash hooks ShellExecute .sh files via the file association instead of running them.",
         steps: &[PluginInstructionStep {
             description: "From your Synth Warp checkout, install the PowerShell hooks",
-            command: ".\\scripts\\install_claude_warp_hooks_windows.ps1",
+            command: WINDOWS_INSTALLER_COMMAND,
             executable: true,
             link: None,
         }],
@@ -322,7 +328,7 @@ static WINDOWS_UPDATE_INSTRUCTIONS: LazyLock<PluginInstructions> = LazyLock::new
         subtitle: "Re-run the installer from your Synth Warp checkout to refresh the PowerShell hooks.",
         steps: &[PluginInstructionStep {
             description: "Refresh hook scripts and settings.json",
-            command: ".\\scripts\\install_claude_warp_hooks_windows.ps1",
+            command: WINDOWS_INSTALLER_COMMAND,
             executable: true,
             link: None,
         }],
