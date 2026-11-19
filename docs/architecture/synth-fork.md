@@ -18,6 +18,13 @@ Product claims live in [README.md](../../README.md) and [FAQ.md](../../FAQ.md). 
 
 Licenses: AGPL v3 for the app; MIT for `warpui` / `warpui_core`.
 
+Legal surface: the fork credits Denver Technologies, Inc. as the original copyright holder and states
+it is not affiliated with Warp ([legal/synth-warp-notice.md](../../legal/synth-warp-notice.md)). OSS
+builds do not ask users to agree to Warp's Terms of Service, the `oss` installer and Linux package
+metadata name the fork as publisher and `AGPL-3.0-only AND MIT` as the license, and the Privacy page
+links the fork's local-first page under its own label. Still upstream: the two-panel Warp glyph in the
+app icons and installer bitmaps, and the Windows deploy overlay onto the official install.
+
 Bundle IDs are `io.github.synthet.Warp` (OSS GUI) and `io.github.synthet.Warp*` for other binaries — not `dev.synth.*` / `synth.dev`. Parse rules: [technical/app-id.md](../technical/app-id.md).
 
 OSS `ChannelState` ships without remote telemetry destinations, crash reporting, or automatic updates.

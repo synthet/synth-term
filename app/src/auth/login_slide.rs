@@ -41,6 +41,7 @@ use crate::server::telemetry::{LoginEventSource, TelemetryEvent};
 use crate::settings::PrivacySettings;
 use crate::themes::theme::Fill as ThemeFill;
 use crate::util::bindings::CustomAction;
+use crate::util::links::warp_inc_links_enabled;
 use crate::{send_telemetry_from_ctx, send_telemetry_sync_from_ctx};
 
 const TOS_URL: &str = "https://www.warp.dev/terms-of-service";
@@ -692,14 +693,15 @@ impl LoginSlideView {
             )
             .finish();
 
-        let disclaimers = Container::new(
-            Flex::column()
-                .with_child(privacy_line)
-                .with_child(Container::new(tos_line).with_margin_top(8.).finish())
-                .finish(),
-        )
-        .with_margin_top(24.)
-        .finish();
+        let mut disclaimer_lines = Flex::column().with_child(privacy_line);
+        // Warp's Terms of Service cover Warp's hosted services, which builds without Warp Inc.
+        // links never use.
+        if warp_inc_links_enabled() {
+            disclaimer_lines.add_child(Container::new(tos_line).with_margin_top(8.).finish());
+        }
+        let disclaimers = Container::new(disclaimer_lines.finish())
+            .with_margin_top(24.)
+            .finish();
 
         let mut header = Flex::column()
             .with_main_axis_size(MainAxisSize::Min)

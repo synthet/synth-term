@@ -2,8 +2,6 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 #include "environment.iss"
 
-#define MyAppPublisher "Denver Technologies, Inc."
-#define MyAppURL "https://www.warp.dev/"
 #ifndef MyAppName
   #define MyAppName "WarpDev"
 #endif
@@ -15,6 +13,14 @@
 #endif
 #ifndef ReleaseChannel
   #define ReleaseChannel "dev"
+#endif
+; The Synth Warp OSS build is not published by Warp, so it must not claim Warp's publisher.
+#if ReleaseChannel == "oss"
+  #define MyAppPublisher "Synth Warp contributors"
+  #define MyAppURL "https://github.com/synthet/warp"
+#else
+  #define MyAppPublisher "Denver Technologies, Inc."
+  #define MyAppURL "https://www.warp.dev/"
 #endif
 #ifndef TargetProfileDir
   #define TargetProfileDir "target\release-lto-debug_assertions"

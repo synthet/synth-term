@@ -2,6 +2,8 @@
 
 **Synth Warp** is a commercial-free, local-first fork of [Warp](https://github.com/warpdotdev/warp)’s open-source client.
 
+Synth Warp is an independent open-source fork of Warp, originally developed by Denver Technologies, Inc. It is not affiliated with or endorsed by Warp.
+
 It keeps the terminal and local tooling, and removes billing, upgrades, credits, referrals, Warp Drive cloud sync, and hosted Warp AI/credit flows. Use external CLI agents (Claude Code, Codex, Gemini CLI, and others) or BYOK where the client supports them.
 
 ## What this fork is
@@ -36,6 +38,12 @@ See [AGENTS.md](AGENTS.md) for the engineering guide and [docs/](docs/README.md)
 
 Distributing modified builds requires complying with AGPL (including source availability for network-used modifications).
 
+The license summary shipped with the app, including the no-warranty and non-affiliation statements, is [legal/synth-warp-notice.md](legal/synth-warp-notice.md).
+
+## Trademarks
+
+"Warp" and the Warp logo are trademarks of their owner. This fork uses the name only to identify the upstream project; the open-source licenses do not grant trademark rights.
+
 ## Upstream
 
-Forked from [synthet/warp](https://github.com/synthet/warp) / [warpdotdev/warp](https://github.com/warpdotdev/warp).
+Forked from [warpdotdev/warp](https://github.com/warpdotdev/warp), the original project by Denver Technologies, Inc.

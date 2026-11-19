@@ -119,7 +119,7 @@ embed_plist::embed_info_plist_bytes!(r#"
     <key>CFBundleURLTypes</key>
     <array><dict><key>CFBundleURLName</key><string>Custom App</string><key>CFBundleURLSchemes</key><array><string>warposs</string></array></dict></array>
     <key>NSHumanReadableCopyright</key>
-    <string>© 2026 Synth Warp</string>
+    <string>© 2020-2026 Denver Technologies, Inc. and Synth Warp contributors</string>
     </dict>
     </plist>
 "#.as_bytes());

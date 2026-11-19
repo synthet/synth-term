@@ -39,6 +39,7 @@ use crate::server::telemetry::{AnonymousUserSignupEntrypoint, LoginEventSource, 
 use crate::settings::{AISettings, PrivacySettings};
 use crate::themes::theme::Fill as ThemeFill;
 use crate::util::color::{darken, lighten};
+use crate::util::links::warp_inc_links_enabled;
 use crate::{send_telemetry_from_ctx, send_telemetry_sync_from_ctx};
 
 const TOS_URL: &str = "https://www.warp.dev/terms-of-service";
@@ -417,7 +418,17 @@ impl AuthViewBody {
                 .finish()
         };
 
-        vec![disclaimer_line_1, disclaimer_line_2]
+        // Warp's Terms of Service cover Warp's hosted services, which builds without Warp Inc.
+        // links never use.
+        if warp_inc_links_enabled() {
+            vec![disclaimer_line_1, disclaimer_line_2]
+        } else {
+            vec![
+                Container::new(disclaimer_line_2)
+                    .with_margin_top(AUTH_MODAL_GAP)
+                    .finish(),
+            ]
+        }
     }
 
     fn render_sign_up_button(

@@ -570,10 +570,10 @@ BEGIN
     BEGIN
         BLOCK "040904E4"
         BEGIN
-            VALUE "CompanyName",      "Synth Warp\0"
+            VALUE "CompanyName",      "Synth Warp contributors\0"
             VALUE "FileDescription",  "{app_name}\0"
             VALUE "FileVersion",      "{version}\0"
-            VALUE "LegalCopyright",   "© 2026 Synth Warp\0"
+            VALUE "LegalCopyright",   "© 2020-2026 Denver Technologies, Inc. and Synth Warp contributors\0"
             VALUE "InternalName",     "\0"
             VALUE "OriginalFilename", "\0"
             VALUE "ProductName",      "Synth Warp\0"

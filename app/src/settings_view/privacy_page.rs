@@ -97,7 +97,14 @@ const DATA_MANAGEMENT_DESCRIPTION: &str = "At any time, you may choose to delete
 const DATA_MANAGEMENT_LINK_TEXT: &str = "Visit the data management page";
 
 const PRIVACY_POLICY_TITLE: &str = "Privacy policy";
-const PRIVACY_POLICY_LINK_TEXT: &str = "Read Warp's privacy policy";
+
+fn privacy_policy_link_text() -> &'static str {
+    if crate::util::links::warp_inc_links_enabled() {
+        "Read Warp's privacy policy"
+    } else {
+        "Read how Synth Warp handles your data"
+    }
+}
 
 pub fn data_management_url(custom_token: Option<&str>) -> Option<String> {
     if !ChannelState::warp_cloud_enabled() {
@@ -1967,7 +1974,7 @@ impl SettingsWidget for PrivacyPolicyWidget {
                     appearance
                         .ui_builder()
                         .link(
-                            PRIVACY_POLICY_LINK_TEXT.into(),
+                            privacy_policy_link_text().into(),
                             Some(privacy_policy_url().into()),
                             None,
                             self.link_mouse_state.clone(),
