@@ -1089,6 +1089,11 @@ fn run_internal(mut launch_mode: LaunchMode) -> Result<()> {
     #[cfg(windows)]
     platform::windows::check_redirection_guard();
 
+    #[cfg(windows)]
+    if launch_mode.is_gui() {
+        platform::windows::raise_shutdown_priority();
+    }
+
     // Adjust resource limits early, before doing other work, to ensure that
     // any children we spawn (like the terminal server) inherit our adjusted
     // rlimits.
@@ -2875,6 +2880,7 @@ pub(crate) fn app_callbacks(
             // update check re-detects it (autoupdate state isn't persisted
             // across restarts, so the artifact may be re-downloaded).
             if source == TerminationRequestSource::System {
+                system::shutdown::note_session_ending();
                 return ApproveTerminateResult::Terminate;
             }
 

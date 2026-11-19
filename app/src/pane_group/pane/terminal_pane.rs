@@ -59,6 +59,7 @@ use crate::server::server_api::ServerApiProvider;
 use crate::server::team_scope::RequestTeamScope;
 use crate::server::telemetry::CloudAgentShellRecoveryFailureClass;
 use crate::session_management::SessionNavigationData;
+use crate::system::shutdown::is_session_ending;
 use crate::terminal::cli_agent_sessions::CLIAgentSessionsModel;
 use crate::terminal::general_settings::GeneralSettings;
 #[cfg(not(target_family = "wasm"))]
@@ -977,6 +978,14 @@ fn handle_terminal_view_event(
                 }
             }
             Event::Exited => {
+                // When the OS ends the session it kills every shell at once. Closing their panes
+                // would close their tabs and rewrite the session snapshot without them; the
+                // process is about to end anyway, so keep the snapshot describing what was open.
+                if is_session_ending() {
+                    log::info!("Shell exited during OS session teardown; keeping the pane open");
+                    return;
+                }
+
                 // If the shell process exited before it successfully bootstrapped,
                 // keep the pane open.  There might be useful information visible
                 // in the output, and if this was the first shell spawned when the

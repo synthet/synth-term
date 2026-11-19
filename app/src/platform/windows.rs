@@ -29,3 +29,17 @@ pub fn check_redirection_guard() {
         );
     }
 }
+
+/// Asks Windows to end this process before default-level processes such as our shells and their
+/// console hosts when the session ends. Otherwise their exits can reach us first and close tabs,
+/// shrinking the saved session before we are asked to quit.
+pub fn raise_shutdown_priority() {
+    // Top of the 0x300-0x3FF range Windows reserves for applications that shut down first.
+    const FIRST_APPLICATION_SHUTDOWN_LEVEL: u32 = 0x3FF;
+
+    if let Err(err) =
+        unsafe { Threading::SetProcessShutdownParameters(FIRST_APPLICATION_SHUTDOWN_LEVEL, 0) }
+    {
+        log::warn!("Failed to raise the process shutdown priority: {err}");
+    }
+}

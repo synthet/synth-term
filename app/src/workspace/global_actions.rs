@@ -14,6 +14,7 @@ use crate::network::NetworkStatus;
 use crate::persistence::ModelEvent;
 use crate::root_view::OpenPath;
 use crate::server::server_api::ServerApiProvider;
+use crate::system::shutdown::is_session_ending;
 use crate::terminal::alt_screen_reporting::AltScreenReporting;
 use crate::terminal::general_settings::GeneralSettings;
 use crate::undo_close::UndoCloseStack;
@@ -136,6 +137,12 @@ fn save_app(_: &(), ctx: &mut AppContext) {
     }
 
     if !*GeneralSettings::as_ref(ctx).restore_session {
+        return;
+    }
+
+    // Anything saved while the OS tears the session down (shells exiting, windows closing) is a
+    // partial session that would overwrite the one we want to restore.
+    if is_session_ending() {
         return;
     }
 
