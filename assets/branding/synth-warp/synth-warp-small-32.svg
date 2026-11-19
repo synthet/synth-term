@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-labelledby="title description">
+  <title id="title">Synth Warp — 24/32 px simplification</title>
+  <desc id="description">The carved W with its box widened to 208..816 and its strokes thickened so the notches stay open at 32 px.</desc>
+  <g id="foundation">
+    <rect x="64" y="64" width="896" height="896" rx="184" fill="#101014"/>
+  </g>
+  <g id="glyph" fill="#FFFFFF">
+    <path d="M 208,224 H 352 L 400,536 L 448,384 H 576 L 624,536 L 672,224 H 816 L 720,800 H 592 L 512,576 L 432,800 H 304 Z"/>
+  </g>
+  <g id="accent" fill="#1FD3F2">
+    <path d="M 248,224 L 352,224 C 304,304 288,400 208,424 L 208,264 A 40 40 0 0 1 248,224 Z"/>
+    <path d="M 776,800 L 672,800 C 720,720 736,624 816,600 L 816,760 A 40 40 0 0 1 776,800 Z"/>
+  </g>
+</svg>
