@@ -1,6 +1,6 @@
-"""Generate and check the Synth Warp app icons and installer images from the vector masters.
+"""Generate and check the Synth Term app icons and installer images from the vector masters.
 
-The masters live in assets/branding/synth-warp/. Requires ImageMagick 7 with SVG support (`magick`
+The masters live in assets/branding/synth-term/. Requires ImageMagick 7 with SVG support (`magick`
 on PATH) and Pillow:
 
     uv run --with pillow python script/apply_branding_icons.py           # regenerate
@@ -20,8 +20,8 @@ import tempfile
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCES = ROOT / "assets" / "branding" / "synth-warp"
-PREVIEW = SOURCES / "synth-warp-app-icon.png"
+SOURCES = ROOT / "assets" / "branding" / "synth-term"
+PREVIEW = SOURCES / "synth-term-app-icon.png"
 INSTALLER_IMAGES = ROOT / "script" / "windows" / "installer-images"
 
 ICO_SIZES = (16, 24, 32, 48, 64, 128, 256)
@@ -39,12 +39,12 @@ ACCENT_FILL = 'fill="#1FD3F2"'
 
 
 def source_for(size: int) -> Path:
-    """Small sizes use hand-simplified geometry so the notches and carves stay readable."""
+    """Small sizes use hand-simplified geometry so the frame and prompt stay readable."""
     if size <= 16:
-        return SOURCES / "synth-warp-small-16.svg"
+        return SOURCES / "synth-term-small-16.svg"
     if size <= 32:
-        return SOURCES / "synth-warp-small-32.svg"
-    return SOURCES / "synth-warp.svg"
+        return SOURCES / "synth-term-small-32.svg"
+    return SOURCES / "synth-term.svg"
 
 
 def render_svg(source: Path, size: int, glyph_fill: str | None = None) -> Image.Image:
@@ -251,7 +251,7 @@ def check() -> None:
 
 
 def apply() -> None:
-    save_png(PREVIEW, render_svg(SOURCES / "synth-warp.svg", 1024))
+    save_png(PREVIEW, render_svg(SOURCES / "synth-term.svg", 1024))
     for channel in CHANNELS:
         out_dir = icon_dir(channel)
         for size in PNG_SIZES:

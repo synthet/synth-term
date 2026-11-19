@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-labelledby="title description">
+  <title id="title">Synth Term — app icon</title>
+  <desc id="description">Synth fork icon family. Flat near-black plate, transparent surround. The mark is a silver terminal window frame holding a >_ prompt: a chevron and a cursor bar on the baseline. All visible artwork is vector geometry.</desc>
+  <defs>
+    <linearGradient id="silver" x1="0" y1="0" x2="0.65" y2="1">
+      <stop stop-color="#F8FAFC"/>
+      <stop offset="0.45" stop-color="#C3CFDC"/>
+      <stop offset="1" stop-color="#A9B7C6"/>
+    </linearGradient>
+  </defs>
+  <g id="foundation">
+    <rect x="64" y="64" width="896" height="896" rx="184" fill="#101014"/>
+  </g>
+  <g id="glyph" fill="url(#silver)" fill-rule="evenodd">
+    <path d="M 281,255 H 740 A 77 77 0 0 1 817,332 V 689 A 77 77 0 0 1 740,766 H 281 A 77 77 0 0 1 204,689 V 332 A 77 77 0 0 1 281,255 Z M 304,330 H 720 A 36 36 0 0 1 756,366 V 655 A 36 36 0 0 1 720,691 H 304 A 36 36 0 0 1 268,655 V 366 A 36 36 0 0 1 304,330 Z"/>
+    <path d="M 326,398 H 397 L 475,507 L 397,618 H 326 L 404,507 Z M 551,574 H 697 V 617 H 551 Z"/>
+  </g>
+</svg>
