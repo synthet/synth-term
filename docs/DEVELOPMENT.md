@@ -13,7 +13,7 @@ okf_version: 0.1
 Thin hub.
 
 - Build and run: [guides/build-and-run.md](guides/build-and-run.md) (Windows resume: `warp-oss` → `target\debug\warp-oss.exe`; toolchain via `script/windows/bootstrap.ps1`)
-- Overlay onto `C:\Program Files\Warp`: [guides/windows-local-deploy.md](guides/windows-local-deploy.md)
+- Install into its own folder (`%LOCALAPPDATA%\Programs\SynthWarp`): [guides/windows-local-deploy.md](guides/windows-local-deploy.md)
 - Expected logged-out Windows GUI warnings: [guides/oss-windows-runtime-warnings.md](guides/oss-windows-runtime-warnings.md)
 - App ID / bundle IDs: [technical/app-id.md](technical/app-id.md)
 - Engineering commands, style, and conventions: [AGENTS.md](../AGENTS.md)

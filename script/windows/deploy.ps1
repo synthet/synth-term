@@ -1,18 +1,18 @@
 #!/usr/bin/env powershell
 <#
 .SYNOPSIS
-    Overlay a local Synth Warp (OSS) build onto the installed Warp directory.
+    Build Synth Warp (OSS) and install it into its own per-user folder.
 
 .DESCRIPTION
-    Builds warp-oss (unless -SkipBuild), stages it as warp.exe plus the Windows
-    payload DLLs/resources, then copies into C:\Program Files\Warp. Existing
-    Start Menu shortcuts and unins000.* are left in place. Re-run after each
-    build to update the live install.
+    Builds warp-oss (unless -SkipBuild), stages it with the Windows payload DLLs and resources,
+    then copies it into %LOCALAPPDATA%\Programs\SynthWarp. Synth Warp runs side by side with any
+    official Warp install: the official folder, its processes, shortcuts and registry entries are
+    never touched. Re-run after each build to update the install.
 
 .EXAMPLE
     .\script\windows\deploy.ps1
     .\script\windows\deploy.ps1 -SkipBuild
-    .\script\windows\deploy.ps1 -Debug
+    .\script\windows\deploy.ps1 -WhatIf
 #>
 param(
     [switch]$Help,
@@ -23,7 +23,10 @@ param(
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSReviewUnusedParameter', 'Restart')]
     [switch]$Restart,
     [switch]$NoRestart,
-    [switch]$CopyOnly,
+    [switch]$NoShortcut,
+    [switch]$NoContextMenu,
+    [switch]$Force,
+    [switch]$WhatIf,
     [string]$InstallDir = '',
     [string]$Features = 'release_bundle,gui',
     [string]$Bin = 'warp-oss',
@@ -35,6 +38,13 @@ if (Get-Variable -Name PSNativeCommandUseErrorActionPreference -ErrorAction Sile
     $PSNativeCommandUseErrorActionPreference = $false
 }
 
+$ProductName = 'Synth Warp'
+# Must match ChannelState::app_id() for the OSS build so the taskbar and notifications attribute
+# windows to this shortcut.
+$AppUserModelId = 'io.github.synthet.Warp'
+$UrlScheme = 'warposs'
+$RegistryKeyName = 'SynthWarp'
+
 $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $TargetDir = Join-Path $RepoRoot 'target'
 $StagingDir = Join-Path $TargetDir 'warp-deploy-staging'
@@ -42,29 +52,36 @@ $BuildScript = Join-Path $PSScriptRoot 'build.ps1'
 $PrepareResourcesScript = Join-Path $PSScriptRoot 'prepare_bundled_resources.ps1'
 
 if (-not $InstallDir) {
-    $InstallDir = Join-Path $env:ProgramFiles 'Warp'
+    $InstallDir = Join-Path $env:LOCALAPPDATA 'Programs\SynthWarp'
 }
+$InstallDir = [System.IO.Path]::GetFullPath($InstallDir)
+$ExeName = "$Bin.exe"
+$InstalledExe = Join-Path $InstallDir $ExeName
 
-# -Release is the default; -Debug opts into a faster non-release overlay.
+# -Release is the default; -Debug opts into a faster non-release build.
 $UseRelease = if ($Release) { $true } else { -not $Debug }
-# -Restart is the default; -NoRestart skips relaunch.
+# -Restart is the default; -NoRestart skips the launch.
 $ShouldRestart = if ($Restart) { $true } else { -not $NoRestart }
 
 function Show-Usage {
     Write-Output @'
 Usage: .\script\windows\deploy.ps1 [options]
 
-Build Synth Warp (OSS) and copy it over the live install at
-C:\Program Files\Warp, keeping Start Menu shortcuts and unins000.*.
+Build Synth Warp (OSS) and install it into %LOCALAPPDATA%\Programs\SynthWarp, side by side
+with any official Warp install, which is never touched.
 
 Options:
   -Help              Show this help.
-  -SkipBuild         Do not compile; stage/copy the last warp-oss.exe.
+  -SkipBuild         Do not compile; install the last warp-oss.exe.
   -Release           Build with --release (default unless -Debug).
-  -Debug             Faster non-release overlay.
-  -Restart           Relaunch warp.exe after copy (default).
-  -NoRestart         Do not relaunch after copy.
-  -InstallDir PATH   Install directory (default: %ProgramFiles%\Warp).
+  -Debug             Faster non-release build.
+  -Restart           Launch Synth Warp after the copy (default).
+  -NoRestart         Do not launch after the copy.
+  -NoShortcut        Do not create the "Synth Warp" Start menu shortcut.
+  -NoContextMenu     Do not add the "Open Synth Warp" Explorer folder entries.
+  -Force             Install into a non-empty folder that has no warp-oss.exe.
+  -WhatIf            Print the plan without stopping processes or writing files.
+  -InstallDir PATH   Install directory (default: %LOCALAPPDATA%\Programs\SynthWarp).
   -Features LIST     Cargo features (default: release_bundle,gui).
   -Bin NAME          Cargo binary (default: warp-oss).
   -Package NAME      Cargo package (default: warp).
@@ -72,14 +89,13 @@ Options:
 Examples:
   .\script\windows\deploy.ps1
   .\script\windows\deploy.ps1 -SkipBuild
-  .\script\windows\deploy.ps1 -Debug
+  .\script\windows\deploy.ps1 -WhatIf
 '@
 }
 
-function Test-IsAdministrator {
-    $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
-    $principal = [Security.Principal.WindowsPrincipal]$identity
-    return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+function Write-Plan {
+    param([string]$Action)
+    Write-Output "What if: $Action"
 }
 
 function Get-WindowsPayloadArch {
@@ -87,25 +103,6 @@ function Get-WindowsPayloadArch {
         return 'arm64'
     }
     return 'x64'
-}
-
-function Test-DirectoryWritable {
-    param([string]$Path)
-    if (-not (Test-Path -LiteralPath $Path -PathType Container)) {
-        try {
-            New-Item -ItemType Directory -Path $Path -Force | Out-Null
-        } catch {
-            return $false
-        }
-    }
-    $probe = Join-Path $Path '.warp-deploy-write-test'
-    try {
-        [System.IO.File]::WriteAllText($probe, 'ok')
-        Remove-Item -LiteralPath $probe -Force
-        return $true
-    } catch {
-        return $false
-    }
 }
 
 function Get-BuiltBinaryPath {
@@ -182,121 +179,6 @@ function Invoke-PrepareResource {
     }
 }
 
-function Initialize-DeployStaging {
-    $arch = Get-WindowsPayloadArch
-    $assetsDir = Join-Path $RepoRoot "app\assets\windows\$arch"
-    $exeSource = Get-BuiltBinaryPath
-    $installedExe = Join-Path $InstallDir 'warp.exe'
-
-    if (Test-Path -LiteralPath $StagingDir -PathType Container) {
-        Remove-Item -LiteralPath $StagingDir -Recurse -Force
-    }
-    New-Item -ItemType Directory -Path $StagingDir | Out-Null
-
-    Write-Output "Staging $exeSource as warp.exe"
-    Copy-PayloadFile -Source $exeSource -Destination (Join-Path $StagingDir 'warp.exe') -Required
-
-    $requiredAssets = @(
-        @{ Src = Join-Path $assetsDir 'conpty.dll'; Dst = Join-Path $StagingDir 'conpty.dll' },
-        @{ Src = Join-Path $assetsDir 'vcruntime140.dll'; Dst = Join-Path $StagingDir 'vcruntime140.dll' },
-        @{ Src = Join-Path $assetsDir 'vcruntime140_1.dll'; Dst = Join-Path $StagingDir 'vcruntime140_1.dll' },
-        @{ Src = Join-Path $assetsDir 'msvcp140.dll'; Dst = Join-Path $StagingDir 'msvcp140.dll' },
-        @{ Src = Join-Path $assetsDir 'dxcompiler.dll'; Dst = Join-Path $StagingDir 'dxcompiler.dll' },
-        @{ Src = Join-Path $assetsDir 'dxil.dll'; Dst = Join-Path $StagingDir 'dxil.dll' },
-        @{ Src = Join-Path $assetsDir 'OpenConsole.exe'; Dst = Join-Path $StagingDir "$arch\OpenConsole.exe" }
-    )
-    foreach ($asset in $requiredAssets) {
-        $relative = $asset.Dst.Substring($StagingDir.Length).TrimStart('\')
-        $installedCopy = Join-Path $InstallDir $relative
-        if (Test-Path -LiteralPath $asset.Src -PathType Leaf) {
-            Copy-PayloadFile -Source $asset.Src -Destination $asset.Dst -Required
-        } elseif (Test-Path -LiteralPath $installedCopy -PathType Leaf) {
-            Write-Output "Repo asset missing ($($asset.Src)); leaving installed copy in place."
-        } else {
-            throw "Required payload file is missing and not already installed: $($asset.Src)"
-        }
-    }
-
-    $iconCandidates = @(
-        (Join-Path $RepoRoot 'app\channels\oss\icon\no-padding\icon.ico'),
-        (Join-Path $RepoRoot 'app\channels\stable\icon\no-padding\icon.ico')
-    )
-    $iconCopied = $false
-    foreach ($icon in $iconCandidates) {
-        if (Test-Path -LiteralPath $icon -PathType Leaf) {
-            Copy-PayloadFile -Source $icon -Destination (Join-Path $StagingDir 'icon.ico')
-            $iconCopied = $true
-            break
-        }
-    }
-    if (-not $iconCopied) {
-        Write-Output 'No channel icon.ico in the checkout; leaving the installed icon in place.'
-    }
-
-    Copy-PayloadFile -Source (Join-Path $RepoRoot 'app\assets\bundled\bootstrap\pwsh.ps1') `
-        -Destination (Join-Path $StagingDir 'pwsh.ps1') -Required
-
-    $cargoProfile = if ($UseRelease) { 'release' } else { 'debug' }
-    Write-Output 'Preparing bundled resources...'
-    Invoke-PrepareResource -DestinationDir (Join-Path $StagingDir 'resources') -CargoProfile $cargoProfile
-
-    Write-CliShim -Path (Join-Path $StagingDir 'bin\warp.cmd') -ExePath $installedExe
-    Write-CliShim -Path (Join-Path $StagingDir 'bin\warp-oss.cmd') -ExePath $installedExe
-}
-
-function Invoke-StopInstalledWarp {
-    [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-        'PSUseCompatibleCommands',
-        '',
-        Justification = 'Process inspection only runs on Windows.'
-    )]
-    [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-        'PSAvoidUsingEmptyCatchBlock',
-        '',
-        Justification = 'CIM query is best-effort.'
-    )]
-    [CmdletBinding()]
-    param()
-    $exePath = Join-Path $InstallDir 'warp.exe'
-    if (-not (Test-Path -LiteralPath $exePath -PathType Leaf)) {
-        return
-    }
-    $target = [System.IO.Path]::GetFullPath($exePath)
-    Write-Output "Stopping $target if it is running..."
-
-    Get-Process -Name 'warp' -ErrorAction SilentlyContinue | ForEach-Object {
-        $path = $null
-        try { $path = $_.Path } catch { $path = $null }
-        if ($path -and ([System.IO.Path]::GetFullPath($path) -eq $target)) {
-            Stop-Process -Id $_.Id -Force -ErrorAction SilentlyContinue
-        }
-    }
-    try {
-        Get-CimInstance Win32_Process -Filter "Name='warp.exe'" -ErrorAction SilentlyContinue |
-            Where-Object {
-                $_.ExecutablePath -and
-                ([System.IO.Path]::GetFullPath($_.ExecutablePath) -eq $target) -and
-                $_.CommandLine -like '*minidump-server*'
-            } |
-            ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
-    } catch {
-        # CIM query is best-effort; file-lock wait below is the real gate.
-        $null = $_
-    }
-
-    $deadline = (Get-Date).AddSeconds(30)
-    while ((Get-Date) -lt $deadline) {
-        try {
-            $stream = [System.IO.File]::Open($exePath, 'Open', 'ReadWrite', 'None')
-            $stream.Close()
-            return
-        } catch {
-            Start-Sleep -Milliseconds 400
-        }
-    }
-    throw "warp.exe is still locked after 30s: $exePath. Close Warp and retry."
-}
-
 function Invoke-Robocopy {
     param(
         [string]$Source,
@@ -312,88 +194,196 @@ function Invoke-Robocopy {
     }
 }
 
+
+function Test-InstallLayout {
+    if (-not (Test-Path -LiteralPath $InstallDir)) {
+        return $true
+    }
+    if (Test-Path -LiteralPath $InstalledExe -PathType Leaf) {
+        return $true
+    }
+    @(Get-ChildItem -LiteralPath $InstallDir -Force).Count -eq 0
+}
+
+function Initialize-DeployStaging {
+    $arch = Get-WindowsPayloadArch
+    $assetsDir = Join-Path $RepoRoot "app\assets\windows\$arch"
+    $exeSource = Get-BuiltBinaryPath
+
+    if (Test-Path -LiteralPath $StagingDir -PathType Container) {
+        Remove-Item -LiteralPath $StagingDir -Recurse -Force
+    }
+    New-Item -ItemType Directory -Path $StagingDir | Out-Null
+
+    Write-Output "Staging $exeSource as $ExeName"
+    Copy-PayloadFile -Source $exeSource -Destination (Join-Path $StagingDir $ExeName) -Required
+
+    foreach ($asset in @(
+            @{ Src = 'conpty.dll'; Dst = 'conpty.dll' },
+            @{ Src = 'vcruntime140.dll'; Dst = 'vcruntime140.dll' },
+            @{ Src = 'vcruntime140_1.dll'; Dst = 'vcruntime140_1.dll' },
+            @{ Src = 'msvcp140.dll'; Dst = 'msvcp140.dll' },
+            @{ Src = 'dxcompiler.dll'; Dst = 'dxcompiler.dll' },
+            @{ Src = 'dxil.dll'; Dst = 'dxil.dll' },
+            @{ Src = 'OpenConsole.exe'; Dst = "$arch\OpenConsole.exe" }
+        )) {
+        Copy-PayloadFile -Source (Join-Path $assetsDir $asset.Src) -Destination (Join-Path $StagingDir $asset.Dst) -Required
+    }
+
+    Copy-PayloadFile -Source (Join-Path $RepoRoot 'app\channels\oss\icon\no-padding\icon.ico') `
+        -Destination (Join-Path $StagingDir 'icon.ico') -Required
+    Copy-PayloadFile -Source (Join-Path $RepoRoot 'app\assets\bundled\bootstrap\pwsh.ps1') `
+        -Destination (Join-Path $StagingDir 'pwsh.ps1') -Required
+    foreach ($notice in @('LICENSE-AGPL', 'LICENSE-MIT', 'legal\synth-warp-notice.md')) {
+        Copy-PayloadFile -Source (Join-Path $RepoRoot $notice) -Destination (Join-Path $StagingDir (Split-Path -Leaf $notice))
+    }
+
+    $cargoProfile = if ($UseRelease) { 'release' } else { 'debug' }
+    Write-Output 'Preparing bundled resources...'
+    Invoke-PrepareResource -DestinationDir (Join-Path $StagingDir 'resources') -CargoProfile $cargoProfile
+
+    Write-CliShim -Path (Join-Path $StagingDir "bin\$Bin.cmd") -ExePath $InstalledExe
+}
+
+function Stop-SynthWarp {
+    # Only processes started from this install, so official Warp keeps running.
+    $prefix = $InstallDir.TrimEnd('\') + '\'
+    $procs = @(Get-Process -ErrorAction SilentlyContinue | Where-Object {
+            $path = $null
+            try { $path = $_.Path } catch { $path = $null }
+            $path -and $path.StartsWith($prefix, [System.StringComparison]::OrdinalIgnoreCase)
+        })
+    if ($procs.Count -eq 0) {
+        return
+    }
+    $ids = ($procs | ForEach-Object { $_.Id }) -join ', '
+    if ($WhatIf) {
+        Write-Plan "stop $ProductName processes $ids"
+        return
+    }
+    Write-Output "Stopping $ProductName processes: $ids"
+    $procs | Stop-Process -Force -ErrorAction SilentlyContinue
+
+    $deadline = (Get-Date).AddSeconds(30)
+    while ((Get-Date) -lt $deadline) {
+        try {
+            $stream = [System.IO.File]::Open($InstalledExe, 'Open', 'ReadWrite', 'None')
+            $stream.Close()
+            return
+        } catch [System.IO.FileNotFoundException] {
+            return
+        } catch {
+            Start-Sleep -Milliseconds 400
+        }
+    }
+    throw "$InstalledExe is still locked after 30s. Close $ProductName and retry."
+}
+
 function Copy-StagingToInstallDir {
-    if (-not (Test-Path -LiteralPath (Join-Path $StagingDir 'warp.exe') -PathType Leaf)) {
-        throw "Staged warp.exe is missing at $StagingDir. Run without -SkipBuild first."
+    if ($WhatIf) {
+        Write-Plan "copy $StagingDir to $InstallDir"
+        return
     }
-    if (-not (Test-Path -LiteralPath $InstallDir -PathType Container)) {
-        New-Item -ItemType Directory -Path $InstallDir | Out-Null
-    }
-
-    Write-Output "Copying payload to $InstallDir (leaving unins000.* in place)"
+    Write-Output "Copying payload to $InstallDir"
     Invoke-Robocopy -Source $StagingDir -Destination $InstallDir -ArgumentList @('/E', '/XD', 'resources', '/NFL', '/NDL', '/NJH', '/NJS', '/NP')
-
     $stagedResources = Join-Path $StagingDir 'resources'
     if (Test-Path -LiteralPath $stagedResources -PathType Container) {
-        $hasFiles = @(Get-ChildItem -LiteralPath $stagedResources -Recurse -File -ErrorAction SilentlyContinue).Count -gt 0
-        if ($hasFiles) {
-            Invoke-Robocopy -Source $stagedResources -Destination (Join-Path $InstallDir 'resources') -ArgumentList @('/E', '/MIR', '/NFL', '/NDL', '/NJH', '/NJS', '/NP')
-        }
+        Invoke-Robocopy -Source $stagedResources -Destination (Join-Path $InstallDir 'resources') -ArgumentList @('/E', '/MIR', '/NFL', '/NDL', '/NJH', '/NJS', '/NP')
     }
 }
 
-function Invoke-UpdateWarpContextMenuScheme {
-    $commandKeys = @(
-        'Software\Classes\Directory\shell\WarpTab\command',
-        'Software\Classes\Directory\Background\shell\WarpTab\command',
-        'Software\Classes\Directory\shell\WarpWindow\command',
-        'Software\Classes\Directory\Background\shell\WarpWindow\command'
+function Set-ShortcutAppUserModelId {
+    param([string]$LinkPath, [string]$AppId)
+    if (-not ('SynthWarp.ShortcutAppId' -as [type])) {
+        Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+namespace SynthWarp {
+    [ComImport, Guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    interface IPropertyStore {
+        int GetCount(out uint count);
+        int GetAt(uint index, out PropertyKey key);
+        int GetValue(ref PropertyKey key, [Out] PropVariant value);
+        int SetValue(ref PropertyKey key, [In] PropVariant value);
+        int Commit();
+    }
+    [StructLayout(LayoutKind.Sequential, Pack = 4)]
+    public struct PropertyKey { public Guid FormatId; public uint PropertyId; }
+    [StructLayout(LayoutKind.Sequential)]
+    public sealed class PropVariant : IDisposable {
+        ushort vt; ushort r1; ushort r2; ushort r3; IntPtr value; IntPtr value2;
+        public PropVariant(string text) { vt = 31; value = Marshal.StringToCoTaskMemUni(text); }
+        public void Dispose() { if (value != IntPtr.Zero) { Marshal.FreeCoTaskMem(value); value = IntPtr.Zero; } }
+    }
+    public static class ShortcutAppId {
+        [DllImport("shell32.dll", CharSet = CharSet.Unicode, PreserveSig = false)]
+        static extern void SHGetPropertyStoreFromParsingName(string path, IntPtr bindContext, int flags, ref Guid iid, [MarshalAs(UnmanagedType.Interface)] out IPropertyStore store);
+        public static void Set(string linkPath, string appId) {
+            Guid iid = typeof(IPropertyStore).GUID;
+            IPropertyStore store;
+            SHGetPropertyStoreFromParsingName(linkPath, IntPtr.Zero, 2 /* GPS_READWRITE */, ref iid, out store);
+            PropertyKey key = new PropertyKey { FormatId = new Guid("9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3"), PropertyId = 5 };
+            using (PropVariant value = new PropVariant(appId)) {
+                Marshal.ThrowExceptionForHR(store.SetValue(ref key, value));
+            }
+            Marshal.ThrowExceptionForHR(store.Commit());
+            Marshal.ReleaseComObject(store);
+        }
+    }
+}
+'@
+    }
+    [SynthWarp.ShortcutAppId]::Set($LinkPath, $AppId)
+}
+
+function New-StartMenuShortcut {
+    $link = Join-Path ([Environment]::GetFolderPath('Programs')) "$ProductName.lnk"
+    if ($WhatIf) {
+        Write-Plan "create Start menu shortcut $link -> $InstalledExe"
+        return
+    }
+    $shell = New-Object -ComObject WScript.Shell
+    $shortcut = $shell.CreateShortcut($link)
+    $shortcut.TargetPath = $InstalledExe
+    $shortcut.WorkingDirectory = $InstallDir
+    $shortcut.IconLocation = (Join-Path $InstallDir 'icon.ico')
+    $shortcut.Description = $ProductName
+    $shortcut.Save()
+    try {
+        Set-ShortcutAppUserModelId -LinkPath $link -AppId $AppUserModelId
+    } catch {
+        Write-Warning "Shortcut created, but setting its AppUserModelID failed: $($_.Exception.Message)"
+    }
+    Write-Output "Start menu shortcut: $link"
+}
+
+function Register-ExplorerEntries {
+    $root = 'HKCU:\Software\Classes\Directory'
+    $entries = @(
+        @{ Key = "shell\$($RegistryKeyName)Tab"; Label = "Open $ProductName in new tab"; Action = 'new_tab'; Path = '%1' },
+        @{ Key = "Background\shell\$($RegistryKeyName)Tab"; Label = "Open $ProductName in new tab"; Action = 'new_tab'; Path = '%V' },
+        @{ Key = "shell\$($RegistryKeyName)Window"; Label = "Open $ProductName in new window"; Action = 'new_window'; Path = '%1' },
+        @{ Key = "Background\shell\$($RegistryKeyName)Window"; Label = "Open $ProductName in new window"; Action = 'new_window'; Path = '%V' }
     )
-    $hives = @('HKCU:')
-    if (Test-IsAdministrator) {
-        $hives += 'HKLM:'
-    }
-
-    $exePath = Join-Path $InstallDir 'warp.exe'
-    foreach ($hive in $hives) {
-        foreach ($relative in $commandKeys) {
-            $keyPath = Join-Path $hive $relative
-            if (-not (Test-Path -LiteralPath $keyPath)) {
-                continue
-            }
-            $current = [string](Get-Item -LiteralPath $keyPath).GetValue('')
-            if ([string]::IsNullOrWhiteSpace($current)) {
-                continue
-            }
-            $updated = $current -replace 'Warp://', 'warposs://' -replace 'warp://', 'warposs://'
-            if ($updated -eq $current) {
-                continue
-            }
-            Set-ItemProperty -LiteralPath $keyPath -Name '(default)' -Value $updated
-            Write-Output "Rewrote context menu URI ($hive\$relative) to warposs://"
+    foreach ($entry in $entries) {
+        $key = Join-Path $root $entry.Key
+        $command = "`"$InstalledExe`" `"$($UrlScheme)://action/$($entry.Action)?path=$($entry.Path)`""
+        if ($WhatIf) {
+            Write-Plan "set $key -> $command"
+            continue
         }
+        New-Item -Path "$key\command" -Force | Out-Null
+        Set-ItemProperty -LiteralPath $key -Name '(default)' -Value $entry.Label
+        Set-ItemProperty -LiteralPath $key -Name 'Icon' -Value (Join-Path $InstallDir 'icon.ico')
+        Set-ItemProperty -LiteralPath "$key\command" -Name '(default)' -Value $command
     }
-
-    $installKey = 'HKCU:\SOFTWARE\Warp.dev\Warp'
-    if (Test-Path -LiteralPath $installKey) {
-        Set-ItemProperty -LiteralPath $installKey -Name 'InstallationPath' -Value $exePath
+    $appPaths = "HKCU:\Software\Microsoft\Windows\CurrentVersion\App Paths\$ExeName"
+    if ($WhatIf) {
+        Write-Plan "set $appPaths -> $InstalledExe"
+        return
     }
-}
-
-function Request-ElevationAndCopy {
-    $hostExe = (Get-Process -Id $PID).Path
-    $restartArg = if ($NoRestart) { '-NoRestart' } else { '-Restart' }
-    $argString = "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`" -CopyOnly -SkipBuild -InstallDir `"$InstallDir`" $restartArg"
-    Write-Output "Install dir is not writable; elevating to copy into $InstallDir"
-    $proc = Start-Process -FilePath $hostExe -Verb RunAs -ArgumentList $argString -Wait -PassThru
-    if ($null -eq $proc.ExitCode) {
-        throw 'Elevated deploy process did not return an exit code.'
-    }
-    if ($proc.ExitCode -ne 0) {
-        throw "Elevated deploy failed with exit code $($proc.ExitCode)"
-    }
-}
-
-function Invoke-CopyAndFinish {
-    Invoke-StopInstalledWarp
-    Copy-StagingToInstallDir
-    Invoke-UpdateWarpContextMenuScheme
-    $installed = Join-Path $InstallDir 'warp.exe'
-    Write-Output "Deployed $installed"
-    if ($ShouldRestart) {
-        Write-Output 'Launching Warp...'
-        Start-Process -FilePath $installed
-    }
+    New-Item -Path $appPaths -Force | Out-Null
+    Set-ItemProperty -LiteralPath $appPaths -Name '(default)' -Value $InstalledExe
 }
 
 if ($Help) {
@@ -403,8 +393,18 @@ if ($Help) {
 
 Set-Location $RepoRoot
 
-if (-not $CopyOnly) {
-    if (-not $SkipBuild) {
+if (-not $Force -and -not (Test-InstallLayout)) {
+    throw "$InstallDir is not empty and has no $ExeName. Pass -Force to install anyway, or -InstallDir to choose another folder."
+}
+
+Write-Output "Deploying $ProductName"
+Write-Output "  install dir: $InstallDir"
+Write-Output "  build:       $(-not $SkipBuild) (release=$UseRelease features=$Features)"
+
+if (-not $SkipBuild) {
+    if ($WhatIf) {
+        Write-Plan "build $Bin (release=$UseRelease features=$Features)"
+    } else {
         $psExe = (Get-Process -Id $PID).Path
         $buildArgList = @(
             '-NoProfile',
@@ -423,17 +423,31 @@ if (-not $CopyOnly) {
             throw "build.ps1 failed with exit code $LASTEXITCODE"
         }
     }
+}
+
+if ($WhatIf) {
+    Write-Plan "stage $Bin.exe, payload DLLs, icon, notices and resources in $StagingDir"
+} else {
     Initialize-DeployStaging
 }
 
-if ($CopyOnly -or (Test-DirectoryWritable -Path $InstallDir)) {
-    Invoke-CopyAndFinish
+Stop-SynthWarp
+Copy-StagingToInstallDir
+if (-not $NoShortcut) {
+    New-StartMenuShortcut
+}
+if (-not $NoContextMenu) {
+    Register-ExplorerEntries
+}
+
+if ($WhatIf) {
     exit 0
 }
 
-if (Test-IsAdministrator) {
-    throw "Install dir is not writable even as Administrator: $InstallDir"
+$info = (Get-Item -LiteralPath $InstalledExe).VersionInfo
+Write-Output "Installed $($info.ProductName) $($info.FileVersion) at $InstalledExe"
+if ($ShouldRestart) {
+    Write-Output "Launching $ProductName..."
+    Start-Process -FilePath $InstalledExe
 }
-
-Request-ElevationAndCopy
 exit 0

@@ -32,7 +32,7 @@ Incoming channel configuration is sanitized: RudderStack credentials and Sentry 
 removed, while an optional local telemetry filename is retained. The process-wide
 `TELEMETRY_POLICY` forbids remote export; `ChannelState::telemetry_remote_export_enabled()` delegates
 to that policy. Privacy setting defaults are off. In-process recording and optional local log files
-can still exist. Overlaying OSS onto official Warp on Windows:
+can still exist. Installing OSS next to official Warp on Windows:
 [guides/windows-local-deploy.md](../guides/windows-local-deploy.md).
 
 ### Local telemetry transport boundary

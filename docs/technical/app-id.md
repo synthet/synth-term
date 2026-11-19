@@ -39,4 +39,4 @@ Constructors: `app/src/bin/oss.rs`, `app/src/bin/local.rs`, `crates/warp_tui/src
 
 On macOS, `is_warp_bundle` treats `application_name` starting with `synthet.Warp` as this family ([`app/src/util/file/external_editor/mac.rs`](../../app/src/util/file/external_editor/mac.rs)).
 
-Data/config directories follow the parsed AppId (Windows example: `github\synthet.Warp` under the OS app-data root), not a three-segment `io.github.synthet` only, and not official Warp’s `%APPDATA%\warp\Warp`. Overlaying the OSS GUI onto `C:\Program Files\Warp`: [guides/windows-local-deploy.md](../guides/windows-local-deploy.md). Tests: `crates/warp_core/src/app_id_tests.rs`, `paths_tests.rs`.
+Data/config directories follow the parsed AppId (Windows example: `github\synthet.Warp` under the OS app-data root), not a three-segment `io.github.synthet` only, and not official Warp’s `%APPDATA%\warp\Warp`. Installing the OSS GUI next to official Warp: [guides/windows-local-deploy.md](../guides/windows-local-deploy.md). Tests: `crates/warp_core/src/app_id_tests.rs`, `paths_tests.rs`.

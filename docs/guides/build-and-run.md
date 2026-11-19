@@ -64,7 +64,7 @@ OOM / rustc crash: the script retries with fewer jobs. Real compile errors (`exi
 
 ## Windows compile speed
 
-Incremental artifacts in `target\` are the inner-loop cache. Do not `-Clean` unless they are corrupt. Debug and `--release` do not share object files. Daily overlays should stay on `--release` or `-Debug`; ThinLTO (`rlto` / `rltoda`) is the shipping profile and is much slower. Do not wrap rustc with sccache for this loop — it disables incremental compilation.
+Incremental artifacts in `target\` are the inner-loop cache. Do not `-Clean` unless they are corrupt. Debug and `--release` do not share object files. Daily deploys should stay on `--release` or `-Debug`; ThinLTO (`rlto` / `rltoda`) is the shipping profile and is much slower. Do not wrap rustc with sccache for this loop — it disables incremental compilation.
 
 Optional local (not committed) speedups:
 
@@ -85,4 +85,4 @@ linker = "rust-lld"
 
 On Windows the GUI prefers the integrated GPU by default (`system.prefer_low_power_gpu`). A hybrid Intel + NVIDIA laptop will log NVIDIA Vulkan deprioritization and may render on Intel UHD DX12. That is not a failed start: [oss-windows-runtime-warnings.md](oss-windows-runtime-warnings.md).
 
-See also: [windows-local-deploy.md](windows-local-deploy.md) (overlay onto `C:\Program Files\Warp`), [DEVELOPMENT.md](../DEVELOPMENT.md), [TROUBLESHOOTING.md](../TROUBLESHOOTING.md).
+See also: [windows-local-deploy.md](windows-local-deploy.md) (per-user install into `%LOCALAPPDATA%\Programs\SynthWarp`), [DEVELOPMENT.md](../DEVELOPMENT.md), [TROUBLESHOOTING.md](../TROUBLESHOOTING.md).

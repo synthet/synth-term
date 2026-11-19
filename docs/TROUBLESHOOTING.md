@@ -13,7 +13,7 @@ okf_version: 0.1
 Thin hub. Failure log: [AGENTS.md](../AGENTS.md) (RCA table).
 
 - Windows OOM (`os error 1455` / page file), rustc `STATUS_STACK_BUFFER_OVERRUN`, resume builds, package-cache lock (including another repo’s cargo), PowerShell `NativeCommandError` from cargo stderr, hung waiter after a successful link: [guides/build-and-run.md](guides/build-and-run.md)
-- Overlaying this fork onto `C:\Program Files\Warp` (do not use `CHANNEL=stable`; do not uninstall official Warp): [guides/windows-local-deploy.md](guides/windows-local-deploy.md)
+- Installing this fork into its own folder next to official Warp (do not use `CHANNEL=stable`): [guides/windows-local-deploy.md](guides/windows-local-deploy.md)
 - Logged-out Windows `warp-oss.exe` `[WARN]` spam (WAL, WSL GUID, empty modals, `=C:`, cloud prefs, Intel GPU): expected, not a failed launch — [guides/oss-windows-runtime-warnings.md](guides/oss-windows-runtime-warnings.md)
 - Claude Code `.sh` hook scripts opening Git Bash / an editor on Windows: [guides/claude-code-warp-windows-hooks.md](guides/claude-code-warp-windows-hooks.md)
 - Hidden Kubernetes prompt chip still spawning `kubectl`, and `pwsh` left after Warp exits: [reports/windows-prompt-chip-processes-2026-10-26.md](reports/windows-prompt-chip-processes-2026-10-26.md)

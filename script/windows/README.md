@@ -1,39 +1,24 @@
 # Windows packaging and local deploy
 
-## Local deploy onto `C:\Program Files\Warp`
+## Local deploy into its own folder
 
-Use this to overlay a Synth Warp (OSS) build onto the existing official install
-without running the Inno Setup wizard. Start Menu shortcuts and `unins000.*` stay
-in place. Re-run after each build.
+Builds Synth Warp (OSS) and installs it per user into `%LOCALAPPDATA%\Programs\SynthWarp`,
+side by side with any official Warp install. Official Warp's folder, processes, shortcuts and
+registry entries are never touched. Re-run after each build; no elevation is needed.
 
 ```powershell
-.\script\windows\deploy.ps1              # build release OSS, overlay, restart
-.\script\windows\deploy.ps1 -SkipBuild   # copy last build only
-.\script\windows\deploy.ps1 -Debug       # faster non-release overlay
+.\script\windows\deploy.ps1              # build release OSS, install, launch
+.\script\windows\deploy.ps1 -SkipBuild   # install the last build only
+.\script\windows\deploy.ps1 -WhatIf      # print the plan, change nothing
 ```
 
 `deploy.cmd` in this folder is a double-clickable wrapper for the same script.
-UAC elevation happens only for the copy step, so a rebuild is not repeated as
-Administrator.
 
-Before the **first** overlay:
-
-- Quit Warp.
-- Optional: copy `C:\Program Files\Warp` and `%APPDATA%\warp\Warp` somewhere safe.
-  Deploy does not delete AppData; the official uninstaller still would.
-- If Warp was installed with winget, pin it so `winget upgrade` cannot restore
-  official binaries: `winget pin add --name Warp` (confirm the package id with
-  `winget list Warp` first).
-
-Do **not** uninstall official Warp as part of this loop. That would wipe AppData
-and remove the shortcuts the overlay relies on.
-
-The overlaid binary is still the OSS channel (`warposs://`, no Warp.dev
-auto-update). Settings live under `io.github.synthet.Warp`, not
-`%APPDATA%\warp\Warp`. Explorer “Open Warp here” commands that still use
-`Warp://` are rewritten to `warposs://` on deploy. If `cargo about` is not
-installed, deploy still copies `resources\bundled` and skips license/schema
-generation.
+Deploy creates a "Synth Warp" Start menu shortcut (AppUserModelID `io.github.synthet.Warp`, so
+the taskbar and notifications attribute to it), "Open Synth Warp in new tab/window" Explorer
+folder entries on `warposs://`, and an App Paths entry for `warp-oss.exe`. Settings live under
+`io.github.synthet.Warp` wherever the binary is installed. If `cargo about` is not installed,
+deploy still copies `resources\bundled` and skips license/schema generation.
 
 Shipping installers (WarpOss / `warp-oss.exe`) continue to use Inno Setup below.
 
