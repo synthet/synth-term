@@ -3192,7 +3192,9 @@ fn nld_slash_command_toggles_and_reports_its_effects() {
                             name,
                             value: Some(value),
                             ..
-                        } if name == "AgentMode.ToggleAutoDetectionSetting" => Some(value),
+                        } if name == "AgentMode.ToggleAutoDetectionSetting" => {
+                            Some((event.timestamp, value))
+                        }
                         _ => None,
                     }),
             );
@@ -3202,15 +3204,18 @@ fn nld_slash_command_toggles_and_reports_its_effects() {
             Timer::after(Duration::from_millis(10)).await;
         }
         assert_eq!(toggles.len(), 2);
+        // Each event is recorded by its own background task, so with several executor threads
+        // they can land out of order. Restore call order from the timestamps taken at each call.
+        toggles.sort_by_key(|(timestamp, _)| *timestamp);
         assert_eq!(
-            toggles[0],
+            toggles[0].1,
             serde_json::json!({
                 "is_autodetection_enabled": true,
                 "origin": "slash_command",
             })
         );
         assert_eq!(
-            toggles[1],
+            toggles[1].1,
             serde_json::json!({
                 "is_autodetection_enabled": false,
                 "origin": "slash_command",
