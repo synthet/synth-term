@@ -96,7 +96,7 @@ sed \
     > "$DEBIAN_DIR/postinst"
 # SYNTH-FORK: the OSS (Synth Warp) package names the fork's maintainers, not Warp's.
 if [ "$RELEASE_CHANNEL" = "oss" ]; then
-  sed -i "s#^Maintainer: .*#Maintainer: Synth Warp contributors <synthet@users.noreply.github.com>#" "$DEBIAN_DIR/control"
+  sed -i "s#^Maintainer: .*#Maintainer: Synth Term contributors <synthet@users.noreply.github.com>#" "$DEBIAN_DIR/control"
 fi
 # SYNTH-FORK: the OSS (Synth Warp) package must not add Warp's apt repository and signing key:
 # an `apt upgrade` could otherwise replace the fork with official Warp.
