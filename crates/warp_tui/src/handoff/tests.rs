@@ -135,6 +135,8 @@ fn slash_menu_selection_inserts_handoff_for_optional_prompt_composition() {
 
 #[test]
 fn no_environment_card_has_top_padding_and_ctrl_c_restores_prompt_and_images() {
+    // Synth Warp gates cloud handoff off in OSS builds; this exercises the upstream path.
+    let _cloud_agents = warp_core::channel::ChannelState::enable_cloud_agents_for_test();
     let _oz_handoff = FeatureFlag::OzHandoff.override_enabled(true);
     let _local_cloud = FeatureFlag::HandoffLocalCloud.override_enabled(true);
     App::test((), |mut app| async move {
@@ -242,6 +244,8 @@ fn no_environment_card_has_top_padding_and_ctrl_c_restores_prompt_and_images() {
 
 #[test]
 fn settings_invalidation_restores_the_draft_and_repeated_submission_keeps_one_card() {
+    // Synth Warp gates cloud handoff off in OSS builds; this exercises the upstream path.
+    let _cloud_agents = warp_core::channel::ChannelState::enable_cloud_agents_for_test();
     let _oz_handoff = FeatureFlag::OzHandoff.override_enabled(true);
     let _local_cloud = FeatureFlag::HandoffLocalCloud.override_enabled(true);
     App::test((), |mut app| async move {
@@ -276,6 +280,8 @@ fn settings_invalidation_restores_the_draft_and_repeated_submission_keeps_one_ca
 
 #[test]
 fn privacy_invalidation_restores_the_draft_and_removes_handoff_from_commands() {
+    // Synth Warp gates cloud handoff off in OSS builds; this exercises the upstream path.
+    let _cloud_agents = warp_core::channel::ChannelState::enable_cloud_agents_for_test();
     let _oz_handoff = FeatureFlag::OzHandoff.override_enabled(true);
     let _local_cloud = FeatureFlag::HandoffLocalCloud.override_enabled(true);
     App::test((), |mut app| async move {
@@ -307,6 +313,8 @@ fn privacy_invalidation_restores_the_draft_and_removes_handoff_from_commands() {
 
 #[test]
 fn long_running_command_rejection_preserves_the_full_local_draft() {
+    // Synth Warp gates cloud handoff off in OSS builds; this exercises the upstream path.
+    let _cloud_agents = warp_core::channel::ChannelState::enable_cloud_agents_for_test();
     let _oz_handoff = FeatureFlag::OzHandoff.override_enabled(true);
     let _local_cloud = FeatureFlag::HandoffLocalCloud.override_enabled(true);
     App::test((), |mut app| async move {
@@ -331,6 +339,37 @@ fn long_running_command_rejection_preserves_the_full_local_draft() {
                 view.transient_hint
                     .current()
                     .is_some_and(|(message, _)| message.contains("command is running"))
+            );
+        });
+    });
+}
+
+/// Synth Warp is local-first: without Warp-hosted cloud agents, `/handoff` never installs a
+/// card. The prompt is kept in the input and the user is told why.
+#[test]
+fn shipped_build_rejects_handoff_and_keeps_the_prompt() {
+    let _oz_handoff = FeatureFlag::OzHandoff.override_enabled(true);
+    let _local_cloud = FeatureFlag::HandoffLocalCloud.override_enabled(true);
+    App::test((), |mut app| async move {
+        assert!(!warp_core::channel::ChannelState::cloud_agents_enabled());
+        let fixture = fixture(&mut app);
+        fixture.view.update(&mut app, |view, ctx| {
+            view.input_view.update(ctx, |input, ctx| {
+                input.set_text("/handoff keep this prompt", ctx);
+            });
+            view.execute_tui_slash_command(
+                &slash_commands::MOVE_TO_CLOUD,
+                Some(&"keep this prompt".to_owned()),
+                ctx,
+            );
+        });
+        assert_eq!(input_text(&app, &fixture), "keep this prompt");
+        fixture.view.read(&app, |view, ctx| {
+            assert!(view.active_handoff(ctx).is_none());
+            assert!(
+                view.transient_hint
+                    .current()
+                    .is_some_and(|(message, _)| message.contains("unavailable in this build"))
             );
         });
     });
