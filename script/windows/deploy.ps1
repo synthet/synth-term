@@ -245,7 +245,7 @@ function Initialize-DeployStaging {
     Write-CliShim -Path (Join-Path $StagingDir "bin\$Bin.cmd") -ExePath $InstalledExe
 }
 
-function Stop-SynthWarp {
+function Invoke-StopSynthWarp {
     # Only processes started from this install, so official Warp keeps running.
     $prefix = $InstallDir.TrimEnd('\') + '\'
     $procs = @(Get-Process -ErrorAction SilentlyContinue | Where-Object {
@@ -292,7 +292,7 @@ function Copy-StagingToInstallDir {
     }
 }
 
-function Set-ShortcutAppUserModelId {
+function Invoke-SetShortcutAppUserModelId {
     param([string]$LinkPath, [string]$AppId)
     if (-not ('SynthWarp.ShortcutAppId' -as [type])) {
         Add-Type -TypeDefinition @'
@@ -336,13 +336,13 @@ namespace SynthWarp {
     [SynthWarp.ShortcutAppId]::Set($LinkPath, $AppId)
 }
 
-function New-StartMenuShortcut {
+function Invoke-CreateStartMenuShortcut {
     $link = Join-Path ([Environment]::GetFolderPath('Programs')) "$ProductName.lnk"
     if ($WhatIf) {
         Write-Plan "create Start menu shortcut $link -> $InstalledExe"
         return
     }
-    $shell = New-Object -ComObject WScript.Shell
+    $shell = [Activator]::CreateInstance([Type]::GetTypeFromProgID('WScript.Shell'))
     $shortcut = $shell.CreateShortcut($link)
     $shortcut.TargetPath = $InstalledExe
     $shortcut.WorkingDirectory = $InstallDir
@@ -350,14 +350,14 @@ function New-StartMenuShortcut {
     $shortcut.Description = $ProductName
     $shortcut.Save()
     try {
-        Set-ShortcutAppUserModelId -LinkPath $link -AppId $AppUserModelId
+        Invoke-SetShortcutAppUserModelId -LinkPath $link -AppId $AppUserModelId
     } catch {
         Write-Warning "Shortcut created, but setting its AppUserModelID failed: $($_.Exception.Message)"
     }
     Write-Output "Start menu shortcut: $link"
 }
 
-function Register-ExplorerEntries {
+function Register-ExplorerEntry {
     $root = 'HKCU:\Software\Classes\Directory'
     $entries = @(
         @{ Key = "shell\$($RegistryKeyName)Tab"; Label = "Open $ProductName in new tab"; Action = 'new_tab'; Path = '%1' },
@@ -431,13 +431,13 @@ if ($WhatIf) {
     Initialize-DeployStaging
 }
 
-Stop-SynthWarp
+Invoke-StopSynthWarp
 Copy-StagingToInstallDir
 if (-not $NoShortcut) {
-    New-StartMenuShortcut
+    Invoke-CreateStartMenuShortcut
 }
 if (-not $NoContextMenu) {
-    Register-ExplorerEntries
+    Register-ExplorerEntry
 }
 
 if ($WhatIf) {
