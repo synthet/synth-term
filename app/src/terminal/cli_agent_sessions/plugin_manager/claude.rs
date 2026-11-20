@@ -299,8 +299,7 @@ static UPDATE_INSTRUCTIONS: LazyLock<PluginInstructions> = LazyLock::new(|| Plug
 /// Runs the installer under `pwsh` with a process-scoped `Bypass`: a bare `.ps1` path fails in
 /// Windows PowerShell 5.1, whose default execution policy is `Restricted`.
 #[cfg(windows)]
-const WINDOWS_INSTALLER_COMMAND: &str =
-    "pwsh -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\install_claude_warp_hooks_windows.ps1";
+const WINDOWS_INSTALLER_COMMAND: &str = "pwsh -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\install_claude_warp_hooks_windows.ps1";
 
 #[cfg(windows)]
 static WINDOWS_INSTALL_INSTRUCTIONS: LazyLock<PluginInstructions> = LazyLock::new(|| {
