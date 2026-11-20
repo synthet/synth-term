@@ -1,5 +1,5 @@
 # Release compliance for script/windows/deploy.ps1 (dot-sourced).
-# Synth Warp is AGPL-3.0 (app) + MIT (warpui crates): every install must carry the licenses, the fork
+# Synth Term is AGPL-3.0 (app) + MIT (warpui crates): every install must carry the licenses, the fork
 # notice and the third-party attributions, and must say which source commit it was built from.
 
 # Paths relative to the staging folder. THIRD_PARTY_LICENSES.txt comes from
@@ -32,7 +32,7 @@ function Write-SourceRecord {
     }
     $dirty = [bool](& git -C $RepoRoot status --porcelain --untracked-files=no)
     $lines = @(
-        'Synth Warp corresponding source (AGPL-3.0-only app, MIT warpui crates)',
+        'Synth Term corresponding source (AGPL-3.0-only app, MIT warpui crates)',
         "commit: $commit",
         "dirty: $($dirty.ToString().ToLowerInvariant())",
         "source: https://github.com/synthet/warp/tree/$commit"
