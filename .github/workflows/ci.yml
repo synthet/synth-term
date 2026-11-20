@@ -130,7 +130,11 @@ jobs:
     name: Run ${{ matrix.name }} tests
     # Synth Warp: compiling the workspace tests on a 4-core GitHub-hosted runner takes most
     # of the budget; upstream ran this job on 16-core / 64 GB runners.
-    timeout-minutes: 60
+    # A cold test compile on a GitHub-hosted Linux runner takes over 60 minutes (2026-11-20, run
+    # 44683524950: "Compile tests" still running at the limit); with a warm cache it takes about
+    # 25 minutes (2026-11-14). The cache is saved only on master and only when the job finishes,
+    # so a 60-minute limit could never warm it.
+    timeout-minutes: 120
     env:
       # Pushes and PRs run unit tests only; manual runs also build and run the integration
       # crate. (The `&& ... || ''` order matters: an empty string is falsy in expressions.)
