@@ -36,7 +36,8 @@ guards run locally in one command.
 - Converting the fork to a patch series or overlay. The owner chose merge-based sync.
 - Renaming internal crate, module or type names (`warp_core`, `Channel::Oss` strings excepted where
   they leak into identifiers). Keeping them is what keeps merges small.
-- Porting features from other forks in this epic. T-12 only proposes candidates for the owner to pick.
+- Porting features from other forks without the owner's pick. T-12 verifies the candidates and presents
+  them; each feature the owner picks becomes its own follow-up ticket (owner default, 2026-11-19).
 - New GitHub workflows. Checks run locally, and existing CI may call the same scripts.
 - Publishing, tagging or merging release PR #16.
 
@@ -59,15 +60,13 @@ guards run locally in one command.
 - **AC-2**: When `check_fork_features.py --upstream <ref>` runs, the fork shall report every file that
   diverges from that upstream ref and that no registered feature claims.
 - **AC-3**: When `script/fork-check` runs on a developer machine, the fork shall run the registry check,
-  the boundary check and the guard tests, and shall exit non-zero if any fails, without network or
-  GitHub access.
+  the boundary check and the guard tests without network or GitHub access.
 - **AC-4**: The fork shall record the last merged upstream commit and date in `fork/upstream.toml`.
 - **AC-5**: When `scripts/fork/sync_report.py` runs against a fetched upstream ref, the fork shall write a
   report listing the upstream commits since the pin, the registered features whose files those
   commits touch, and the predicted conflicted files.
-- **AC-6**: A fork spec whose front matter says `status: frozen` shall be changed only by adding a
-  superseding spec. `check_fork_features.py` shall fail when a frozen spec's recorded hash no longer
-  matches its content.
+- **AC-6**: The fork shall change a spec whose front matter says `status: frozen` only by adding a
+  superseding spec.
 - **AC-7**: If the Windows single-instance mutex, URI named pipe, URL scheme, App Paths key, installer
   AppId, installer registry root or Linux desktop id equals the upstream value, then a guard test
   shall fail.
@@ -86,10 +85,14 @@ guards run locally in one command.
 - **AC-14**: While `warp_inc_links_enabled()` is false, the OSS build shall show no docs.warp.dev or
   github.com/warpdotdev link, except attribution.
 - **AC-15**: While Warp Drive is unavailable, the OSS build shall show no Warp Drive surface.
-- **AC-16**: When `deploy.ps1` stages a build, it shall record the source commit in the install, and
-  shall fail if `LICENSE-AGPL`, `LICENSE-MIT`, the fork notice or `THIRD_PARTY_LICENSES.txt` is missing.
+- **AC-16**: When `deploy.ps1` stages a build, it shall record the source commit in the install.
 - **AC-17**: The fork shall document its sync model, registry, frozen specs, presubmit check and identity
   rules in `docs/architecture/synth-fork.md`.
+- **AC-18**: If any check that `script/fork-check` runs fails, then `script/fork-check` shall exit non-zero.
+- **AC-19**: If a frozen spec's content no longer matches its recorded hash, then
+  `check_fork_features.py` shall fail.
+- **AC-20**: If `LICENSE-AGPL`, `LICENSE-MIT`, the fork notice or `THIRD_PARTY_LICENSES.txt` is missing from
+  the staged build, then `deploy.ps1` shall fail.
 
 ## Assumptions and dependencies
 
@@ -101,14 +104,15 @@ guards run locally in one command.
 - Upstream is fetched by URL (`git fetch https://github.com/warpdotdev/warp.git master`), which keeps
   `.git/config` untouched.
 
-## Open questions
+## Decisions
 
-- **OPEN QUESTION 1 (data dir):** copy Synth Warp data into the `synthet.term` folder on first start
-  (AC-11, recommended), or keep the old data folder name forever?
-- **OPEN QUESTION 2 (Inno installer):** keep it as a supported shipping path, with identities fixed
-  (recommended, since README calls it the shipping path), or retire it in favor of `deploy.ps1`?
-- **OPEN QUESTION 3 (channel naming):** derive mutex and pipe names from a fork product constant
-  (recommended, small diff), or rename `Channel::Oss` itself (large merge surface)?
+Resolved 2026-11-19 by taking the recommended option. The owner can reopen any of them before the
+task starts.
+
+- **Data folder:** copy Synth Warp data into the `synthet.term` folder once, on first start (AC-11).
+- **Inno installer:** stays a supported path with fork-owned identities (T-6).
+- **Channel naming:** derive the mutex and pipe names from a fork product constant. `Channel::Oss` keeps
+  its name, which keeps merges small (T-5).
 
 Sources: fork practices from the Gram, Zedless, warp-lite and Synth Zed projects (identity swap,
 unwire-don't-delete, pinned upstream baseline, reviewed sync reports, per-release source links).
