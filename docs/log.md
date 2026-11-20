@@ -6,6 +6,7 @@ Format: `- YYYY-MM-DD: <verb> — <details and paths>` (verbs: `created`, `updat
 
 ## 2026-11
 
+- 2026-11-20: created — [reports/fork-feature-candidates.md](reports/fork-feature-candidates.md): verified survey of other Warp/Zed forks with a pick table (epic task T-12); no porting.
 - 2026-11-05: created — self-hosted remote control verification: [reports/remote-control-verification-2026-11-05.md](reports/remote-control-verification-2026-11-05.md). Updated the guide's troubleshooting table and the spec's known limits with what the run found.
 
 ## 2026-10
