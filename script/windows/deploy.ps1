@@ -155,7 +155,7 @@ function Write-CliShim {
 }
 
 function Invoke-PrepareResource {
-    param([string]$DestinationDir, [string]$CargoProfile)
+    param([string]$DestinationDir, [string]$SchemaExecutable)
     $bundledSource = Join-Path $RepoRoot 'resources\bundled'
     $bundledDest = Join-Path $DestinationDir 'bundled'
     if (-not (Test-Path -LiteralPath $bundledSource -PathType Container)) {
@@ -166,7 +166,14 @@ function Invoke-PrepareResource {
     }
 
     try {
-        & $PrepareResourcesScript -DestinationDir $DestinationDir -Channel oss -CargoProfile $CargoProfile
+        # prepare_bundled_resources.ps1 runs the built app to dump the settings schema, as bundle.ps1 does.
+        $previousSchemaExe = $env:SETTINGS_SCHEMA_EXECUTABLE
+        $env:SETTINGS_SCHEMA_EXECUTABLE = $SchemaExecutable
+        try {
+            & $PrepareResourcesScript -DestinationDir $DestinationDir -Channel oss
+        } finally {
+            $env:SETTINGS_SCHEMA_EXECUTABLE = $previousSchemaExe
+        }
         if ($LASTEXITCODE -and $LASTEXITCODE -ne 0) {
             throw "prepare_bundled_resources.ps1 exited $LASTEXITCODE"
         }
@@ -239,9 +246,8 @@ function Initialize-DeployStaging {
         Copy-PayloadFile -Source (Join-Path $RepoRoot $notice) -Destination (Join-Path $StagingDir (Split-Path -Leaf $notice))
     }
 
-    $cargoProfile = if ($UseRelease) { 'release' } else { 'debug' }
     Write-Output 'Preparing bundled resources...'
-    Invoke-PrepareResource -DestinationDir (Join-Path $StagingDir 'resources') -CargoProfile $cargoProfile
+    Invoke-PrepareResource -DestinationDir (Join-Path $StagingDir 'resources') -SchemaExecutable $exeSource
     Write-SourceRecord -StagingDir $StagingDir -RepoRoot $RepoRoot
     Assert-StagedCompliance -StagingDir $StagingDir
 
