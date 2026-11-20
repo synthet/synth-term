@@ -94,6 +94,10 @@ sed \
     "s#@@CHANNEL_SUFFIX@@#$CHANNEL_SUFFIX#g; s#@@BINARY_NAME@@#$BINARY_NAME#g; s#@@OPTDIR@@#$OPT_DIR#g; s#@@REPO_NAME@@#$REPO_NAME#g; s#@@CHANNEL@@#$RELEASE_CHANNEL#g; s#@@ARCH@@#$ARCH#g" \
     < "$TEMPLATE_DIR/postinst.template" \
     > "$DEBIAN_DIR/postinst"
+# SYNTH-FORK: the OSS (Synth Warp) package names the fork's maintainers, not Warp's.
+if [ "$RELEASE_CHANNEL" = "oss" ]; then
+  sed -i "s#^Maintainer: .*#Maintainer: Synth Warp contributors <synthet@users.noreply.github.com>#" "$DEBIAN_DIR/control"
+fi
 # SYNTH-FORK: the OSS (Synth Warp) package must not add Warp's apt repository and signing key:
 # an `apt upgrade` could otherwise replace the fork with official Warp.
 if [ "$RELEASE_CHANNEL" != "oss" ]; then

@@ -93,6 +93,7 @@ if [ "$RELEASE_CHANNEL" = "oss" ]; then
     !skip
   ' "$RPMBUILD_DIR/SPEC/warp.spec" > "$RPMBUILD_DIR/SPEC/warp.spec.oss"
   mv "$RPMBUILD_DIR/SPEC/warp.spec.oss" "$RPMBUILD_DIR/SPEC/warp.spec"
+  sed -i "s#^Packager: .*#Packager:    Synth Warp contributors <synthet@users.noreply.github.com>#" "$RPMBUILD_DIR/SPEC/warp.spec"
   if grep -q "releases.warp.dev\|RPM-GPG-KEY" "$RPMBUILD_DIR/SPEC/warp.spec"; then
     echo "::error ::Warp repository setup is still present in the OSS spec"
     exit 1
