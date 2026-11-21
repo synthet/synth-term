@@ -44,9 +44,12 @@ const HEADLINE_FONT_SIZE: f32 = 20.;
 const VALUE_FONT_SIZE: f32 = 14.;
 const CAPTION_FONT_SIZE: f32 = 12.;
 
-/// "Synth Term 0.1.0", like Synth Code's "Synth Code 1.17.0".
-fn headline_text() -> String {
-    format!("{PRODUCT_NAME} {}", env!("CARGO_PKG_VERSION"))
+/// "Synth Term 0.3.0", like Synth Code's "Synth Code 1.17.0": the version from the
+/// Version row without its leading `v` and build suffix, so the two always agree.
+fn headline_text(version: &str) -> String {
+    let short = version.trim_start_matches('v');
+    let short = short.split('+').next().unwrap_or(short);
+    format!("{PRODUCT_NAME} {short}")
 }
 
 /// The third-party license list that deploy and the installers place next to the
@@ -191,7 +194,7 @@ impl SettingsWidget for AboutPageWidget {
                 .finish(),
             )
             .with_child(
-                Container::new(text(headline_text(), HEADLINE_FONT_SIZE, false))
+                Container::new(text(headline_text(version), HEADLINE_FONT_SIZE, false))
                     .with_margin_top(12.)
                     .finish(),
             )

@@ -64,9 +64,11 @@ fn about_page_logos_are_bundled_and_not_the_warp_mark() {
 }
 
 #[test]
-fn about_headline_pairs_name_and_crate_version() {
+fn about_headline_matches_the_version_row() {
+    assert_eq!(headline_text("v0.3.0"), "Synth Term 0.3.0");
+    assert_eq!(headline_text("v0.1.0+081315e7"), "Synth Term 0.1.0");
     assert_eq!(
-        headline_text(),
+        headline_text(about_version_text(None)),
         format!("Synth Term {}", env!("CARGO_PKG_VERSION"))
     );
     assert!(UPSTREAM_NOTICE.contains("Not affiliated"));
