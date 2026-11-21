@@ -10036,7 +10036,7 @@ impl Workspace {
 
         #[cfg(not(target_family = "wasm"))]
         items.push(
-            MenuItemFields::new("View Warp logs")
+            MenuItemFields::new("View Synth Term logs")
                 .with_on_select_action(WorkspaceAction::ViewLogs)
                 .into_item(),
         );
