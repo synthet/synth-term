@@ -23896,7 +23896,11 @@ impl Workspace {
                 entry_focus: GlobalSearchEntryFocus::Results,
             });
         }
-        if *WarpDriveSettings::as_ref(ctx).enable_warp_drive {
+        // SYNTH-FORK: no Drive tab without Warp cloud access. With it, upstream behaviour stays:
+        // the stored preference shows the tab, locked until the user has an account.
+        if *WarpDriveSettings::as_ref(ctx).enable_warp_drive
+            && crate::channel::ChannelState::warp_cloud_enabled()
+        {
             views.push(ToolPanelView::WarpDrive);
         }
         views

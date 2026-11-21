@@ -1206,7 +1206,8 @@ pub fn init(app: &mut AppContext) {
                 query: None,
             },
         )
-        .with_context_predicate(id!("Workspace"))
+        // SYNTH-FORK: listed only while Warp Drive is enabled and available.
+        .with_context_predicate(id!("Workspace") & id!(flags::ENABLE_WARP_DRIVE))
         .with_custom_action(CustomAction::SearchDrive),
     ]);
 
