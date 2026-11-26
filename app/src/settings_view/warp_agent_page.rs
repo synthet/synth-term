@@ -5883,7 +5883,8 @@ const PROVIDER_KEYS_DESCRIPTION_SELF_HOSTED: &str = "Use your own API keys from 
 const CUSTOM_ENDPOINTS_DESCRIPTION: &str = "Add custom endpoints to use third-party models. Custom endpoints must support OpenAI Chat Completions, OpenAI Responses, or Anthropic Messages.";
 const KEY_STORAGE_DESCRIPTION_WARP_HOSTED: &str =
     "API keys added here are stored only on this device, not on Warp's servers.";
-const KEY_STORAGE_DESCRIPTION_SELF_HOSTED: &str = "API keys added here are stored only on this device.";
+const KEY_STORAGE_DESCRIPTION_SELF_HOSTED: &str =
+    "API keys added here are stored only on this device.";
 const NO_BACKEND_PREREQUISITE: &str = "No backend is configured, so these keys are not used and the fields are disabled. Set SYNTH_WARP_SERVER_ROOT_URL to a self-hosted backend to enable them.";
 
 /// The Custom Inference description paragraphs. Warp-hosted channels keep the
