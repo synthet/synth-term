@@ -177,3 +177,9 @@ fn oss_unit_tests_have_no_byok_backend() {
     );
     assert!(!byok_backend_available());
 }
+
+#[test]
+fn backend_prerequisite_is_not_shown_for_custom_endpoints_alone() {
+    let text = custom_inference_description_paragraphs(false, true, false, false).join("\n");
+    assert!(!text.contains("not used"), "{text}");
+}

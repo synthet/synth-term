@@ -5912,7 +5912,8 @@ fn custom_inference_description_paragraphs(
         } else {
             KEY_STORAGE_DESCRIPTION_SELF_HOSTED
         });
-        if !warp_hosted_ai && !backend_available {
+        // The prerequisite names the provider key fields, so it only applies when they show.
+        if show_provider_keys && !warp_hosted_ai && !backend_available {
             paragraphs.push(NO_BACKEND_PREREQUISITE);
         }
     }
