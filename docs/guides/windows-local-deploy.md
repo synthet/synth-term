@@ -56,10 +56,10 @@ If `%LOCALAPPDATA%\Programs\SynthTerm\warp-oss.exe` is in that chain, split the 
 
 ## Verify what is installed
 
-The exe carries its build commit:
+The exe carries the fork version and its build commit. Without `GIT_RELEASE_TAG` (deploy never sets it), `app/build.rs` builds both the About page version and the exe version resource from the repo-root `VERSION` file plus the short commit hash. `app/Cargo.toml` keeps upstream's `0.1.0` and is only the fallback when `VERSION` is missing:
 
 ```powershell
-(Get-Item "$env:LOCALAPPDATA\Programs\SynthTerm\warp-oss.exe").VersionInfo.FileVersion   # v0.1.0+<short sha>
+(Get-Item "$env:LOCALAPPDATA\Programs\SynthTerm\warp-oss.exe").VersionInfo.FileVersion   # v<VERSION>+<short sha>, e.g. v0.2.0+0e6fd3ac
 ```
 
 ```bash
