@@ -254,7 +254,9 @@ impl AgentToolbarItemKind {
         {
             items.push(Self::HandoffToCloud);
         }
-        items.push(Self::VoiceInput);
+        if voice_input_supported() {
+            items.push(Self::VoiceInput);
+        }
         items.push(Self::FileAttach);
         items
     }
@@ -265,10 +267,11 @@ impl AgentToolbarItemKind {
             .into_iter()
             .map(Self::ContextChip)
             .collect();
+        items.extend([Self::ModelSelector, Self::NLDToggle]);
+        if voice_input_supported() {
+            items.push(Self::VoiceInput);
+        }
         items.extend([
-            Self::ModelSelector,
-            Self::NLDToggle,
-            Self::VoiceInput,
             Self::FileAttach,
             Self::ContextWindowUsage,
             Self::UsageSummary,
